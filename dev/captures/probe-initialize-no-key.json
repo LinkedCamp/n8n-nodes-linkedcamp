@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-11-21",
+  "note": "POST https://mcp.linkedcamp.com/mcp initialize with no auth header.",
+  "response": {
+    "status": 401,
+    "headers": { "content-type": "application/json", "www-authenticate": "Bearer realm=\"LinkedCamp\", resource_metadata=\"https://mcp.linkedcamp.com/.well-known/oauth-protected-resource\"" },
+    "body": {"jsonrpc":"2.0","error":{"code":-32001,"message":"Not authenticated. Connect through OAuth, or send your LinkedCamp API key as \"Authorization: Bearer <key>\" or \"X-Api-Key: <key>\". Your key is at https://app.linkedcamp.com/settings/integrations."},"id":null}
+  }
+}

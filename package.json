@@ -1,0 +1,62 @@
+{
+  "name": "n8n-nodes-linkedcamp",
+  "version": "0.1.0",
+  "description": "n8n nodes for Linkedcamp: run LinkedIn and email outreach campaigns, add leads, handle inbox replies and react to events.",
+  "license": "MIT",
+  "homepage": "https://www.linkedcamp.com/integrations/n8n",
+  "keywords": [
+    "n8n-community-node-package",
+    "linkedcamp",
+    "linkedin",
+    "outreach",
+    "lead generation",
+    "mcp"
+  ],
+  "author": {
+    "name": "Arslan Nasir",
+    "email": "arslan@mobylogix.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LinkedCamp/n8n-nodes-linkedcamp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LinkedCamp/n8n-nodes-linkedcamp/issues"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease",
+    "test": "n8n-node build >/dev/null && node --test 'test/**/*.test.ts'"
+  },
+  "files": [
+    "dist/credentials",
+    "dist/nodes"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/LinkedcampApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Linkedcamp/Linkedcamp.node.js",
+      "dist/nodes/Linkedcamp/LinkedcampTrigger.node.js",
+      "dist/nodes/Linkedcamp/LinkedcampPollTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "*",
+    "eslint": "9.32.0",
+    "prettier": "3.6.2",
+    "release-it": "^21.1.0",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

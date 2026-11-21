@@ -1,0 +1,6 @@
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/progress","params":{"progressToken":"t","progress":1,"total":2}}
+
+event: message
+data: {"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\"total\":1,\"leads\":[{\"_id\":\"l1\",\"status\":\"REPLIED\"}]}"}]}}
+

@@ -2,3 +2,8 @@ dist
 node_modules
 *.tgz
 .env
+
+# Local agent guides from the n8n scaffold (kept out of the repo)
+CLAUDE.md
+AGENTS.md
+.agents/
