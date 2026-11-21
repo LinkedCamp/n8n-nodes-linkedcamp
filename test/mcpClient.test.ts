@@ -1,3 +1,4 @@
+/* eslint-disable @n8n/community-nodes/no-restricted-imports -- tests are not published; Node built-ins are fine here */
 /**
  * Unit tests for the MCP transport. No network: every response comes from a
  * fixture under test/fixtures. Run with `npm test` (Node 22.18+ runs .ts

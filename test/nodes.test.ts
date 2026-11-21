@@ -1,3 +1,4 @@
+/* eslint-disable @n8n/community-nodes/no-restricted-imports -- tests are not published; Node built-ins are fine here */
 /**
  * Behaviour tests for the built nodes (dist/), driven through a fake n8n
  * context and a fake MCP server. No network. Run `npm run build` first
