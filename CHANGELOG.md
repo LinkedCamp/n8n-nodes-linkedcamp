@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 (2026-11-22)
+
+- The nodes now call the Linkedcamp REST API v2 (`https://api.linkedcamp.com/v2`) instead of the MCP server. Operations, fields and outputs are unchanged, and the same API key works.
+- The credential test now uses `POST /v2/whoami`.
+- Errors now carry Linkedcamp's own message and hint, with the right HTTP status.
+
 ## 0.1.0 (2026-11-21)
 
 First version.

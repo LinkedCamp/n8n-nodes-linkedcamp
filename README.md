@@ -6,7 +6,7 @@
 
 The official [n8n](https://n8n.io) nodes for [Linkedcamp](https://www.linkedcamp.com).
 
-Linkedcamp is agentic LinkedIn and email outreach for lead generation agencies. Each client runs as its own sub-account, and every LinkedIn account gets a country-matched dedicated IP, free on every plan. Use this node to add leads to campaigns from any form, CRM or enrichment tool, react instantly when a prospect accepts a connection or replies, write enrichment data back to leads, and manage campaigns and replies. Actions run on the Linkedcamp MCP server, so the same API key also works in AI assistants. Plans start from $79/mo with a 14-day trial.
+Linkedcamp is agentic LinkedIn and email outreach for lead generation agencies. Each client runs as its own sub-account, and every LinkedIn account gets a country-matched dedicated IP, free on every plan. Use this node to add leads to campaigns from any form, CRM or enrichment tool, react instantly when a prospect accepts a connection or replies, write enrichment data back to leads, and manage campaigns and replies. The node uses the Linkedcamp REST API, and the same API key also works in AI assistants. Plans start from $79/mo with a 14-day trial.
 
 The package contains three nodes:
 
@@ -28,7 +28,7 @@ The package contains three nodes:
 2. In n8n, create a **Linkedcamp API** credential and paste the key.
 3. Click **Test**. n8n asks Linkedcamp who the key belongs to; a wrong or rotated key is rejected.
 
-One key covers all three nodes. It is sent as the `X-Api-Key` header to `https://mcp.linkedcamp.com/mcp`.
+One key covers all three nodes. It is sent as the `X-Api-Key` header to the [Linkedcamp REST API v2](https://docs.linkedcamp.com/api-v2/overview) at `https://api.linkedcamp.com/v2`.
 
 Agency owners: the key of the account owner can read client sub-accounts. Use the **Client** option on Campaign → Get Many, Campaign → Get Stats and Tag → Get Many.
 
@@ -63,7 +63,7 @@ Agency owners: the key of the account owner can read client sub-accounts. Use th
 | Tag | Create | Name plus interest (positive, neutral, negative) |
 | Tag | Get Many | |
 | Task | Create or Update | Leave Task ID empty to create |
-| Tool | Call Any Tool | Advanced: call any Linkedcamp MCP tool by name with JSON arguments |
+| Tool | Call Any Tool | Advanced: call any [REST API v2 endpoint](https://docs.linkedcamp.com/api-v2/overview) by name with JSON arguments |
 
 Campaign, Lead, Conversation, LinkedIn Account and Client fields can be picked **From List** (searchable) or entered **By ID**.
 
@@ -116,7 +116,8 @@ The Linkedcamp node is also marked as usable as an AI tool, so it can be attache
 ## Links
 
 - [Linkedcamp + n8n](https://www.linkedcamp.com/integrations/n8n)
-- [Linkedcamp MCP documentation](https://docs.linkedcamp.com/mcp/overview)
+- [Linkedcamp REST API v2](https://docs.linkedcamp.com/api-v2/overview)
+- [Linkedcamp MCP server](https://docs.linkedcamp.com/mcp/overview)
 - [Linkedcamp](https://www.linkedcamp.com)
 
 ## Development
@@ -135,7 +136,7 @@ npm run dev        # local n8n with the nodes loaded
 LINKEDCAMP_TEST_API_KEY=... node dev/bootstrap.mjs
 ```
 
-It calls read-only tools only. The `dev/` and `test/` folders are not published to npm.
+It calls read-only endpoints only. The `dev/` and `test/` folders are not published to npm.
 
 ## License
 

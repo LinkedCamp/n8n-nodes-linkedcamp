@@ -3,7 +3,7 @@
  */
 import type { IDataObject, INodeProperties } from 'n8n-workflow';
 
-import { callTool, compact, toEpochMs } from '../transport/mcp';
+import { callApi, compact, toEpochMs } from '../transport/request';
 import { asObject, collectPages, returnAllAndLimit } from '../shared';
 import type { HandlerMap } from './types';
 
@@ -109,7 +109,7 @@ export const taskHandlers: HandlerMap = {
 			date: toEpochMs(extra.date),
 			isCompleted: extra.isCompleted,
 		});
-		return asObject(await callTool(ctx, client, 'task_upsert', args, i));
+		return asObject(await callApi(ctx, client, 'task_upsert', args, i));
 	},
 };
 
@@ -189,7 +189,7 @@ export const reminderHandlers: HandlerMap = {
 			conversationId: extra.conversationId,
 			linkedAccountId: extra.linkedAccountId,
 		});
-		return asObject(await callTool(ctx, client, 'reminder_create', args, i));
+		return asObject(await callApi(ctx, client, 'reminder_create', args, i));
 	},
 };
 

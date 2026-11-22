@@ -1,6 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-import { callTool } from '../transport/mcp';
+import { callApi } from '../transport/request';
 import { asObject, locatorField, locatorValue } from '../shared';
 import type { HandlerMap } from './types';
 
@@ -64,6 +64,6 @@ export const blacklistHandlers: HandlerMap = {
 			type: ctx.getNodeParameter('type', i) as string,
 			keyword: ctx.getNodeParameter('keyword', i) as string,
 		};
-		return asObject(await callTool(ctx, client, 'blacklist_add', args, i));
+		return asObject(await callApi(ctx, client, 'blacklist_add', args, i));
 	},
 };

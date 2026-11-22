@@ -1,0 +1,39 @@
+{
+  "capturedAt": "2026-11-22",
+  "note": "Live probes of https://api.linkedcamp.com/v2 with no key and with a random UUID (not a real key). No account was touched.",
+  "probes": [
+    {
+      "request": "POST /v2/whoami, no key",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Missing API key. Send it as \"X-Api-Key: <key>\" or \"Authorization: Bearer <key>\".",
+          "hint": "Your key is at https://app.linkedcamp.com/settings/integrations?type=api."
+        }
+      }
+    },
+    {
+      "request": "POST /v2/whoami, X-Api-Key = random UUID",
+      "status": 401,
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Internal server error",
+          "hint": "The key may have been rotated in Settings \u2192 Integrations. Re-copy it, then reconnect."
+        }
+      }
+    },
+    {
+      "request": "POST /v2/no_such_endpoint, X-Api-Key = random UUID",
+      "status": 404,
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "No endpoint named `no_such_endpoint`.",
+          "hint": "GET /v2/openapi.json lists every endpoint."
+        }
+      }
+    }
+  ]
+}

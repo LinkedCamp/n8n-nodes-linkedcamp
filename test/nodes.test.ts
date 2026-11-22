@@ -1,7 +1,7 @@
 /* eslint-disable @n8n/community-nodes/no-restricted-imports -- tests are not published; Node built-ins are fine here */
 /**
  * Behaviour tests for the built nodes (dist/), driven through a fake n8n
- * context and a fake MCP server. No network. Run `npm run build` first
+ * context and a fake Linkedcamp REST API v2. No network. Run `npm run build` first
  * (`npm test` does).
  */
 import { test } from 'node:test';
@@ -18,31 +18,31 @@ const { LinkedcampTrigger } = require(join(dist, 'LinkedcampTrigger.node.js'));
 type Json = Record<string, unknown>;
 type ToolImpl = (args: Json) => unknown;
 
-/** A fake MCP server: answers initialize / notifications / tools/call from a tool map. */
+/** A fake Linkedcamp REST API v2: POST /v2/<endpoint> answered from a map. */
 function fakeServer(tools: Record<string, ToolImpl>) {
 	const calls: Array<{ name: string; args: Json }> = [];
-	const request = async (_cred: string, options: { body?: string; headers: Json }) => {
+	const request = async (cred: string, options: { url: string; method: string; body?: string; headers: Json }) => {
+		assert.equal(cred, 'linkedcampApi');
 		assert.equal(options.headers['X-Api-Key'], undefined, 'node code must not set the key itself');
-		const body = options.body ? (JSON.parse(options.body) as Json) : {};
-		const reply = (payload: Json, status = 200) => ({
+		const match = /^https:\/\/api\.linkedcamp\.com\/v2\/([a-z_]+)$/.exec(options.url);
+		assert.ok(match, `unexpected URL ${options.url}`);
+		assert.equal(options.method, 'POST');
+		const name = match[1];
+		const args = options.body ? (JSON.parse(options.body) as Json) : {};
+		calls.push({ name, args });
+		const respond = (status: number, body: unknown) => ({
 			statusCode: status,
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ jsonrpc: '2.0', id: body.id, ...payload }),
+			body: JSON.stringify(body),
 		});
-		if (body.method === 'initialize') return reply({ result: { protocolVersion: '2025-06-18', capabilities: {} } });
-		if (body.method === 'notifications/initialized') return { statusCode: 202, headers: {}, body: '' };
-		if (body.method === 'tools/call') {
-			const { name, arguments: args } = body.params as { name: string; arguments: Json };
-			calls.push({ name, args });
-			const impl = tools[name];
-			if (!impl) return reply({ result: { content: [{ type: 'text', text: `Unknown tool ${name}` }], isError: true } });
-			try {
-				return reply({ result: { content: [{ type: 'text', text: JSON.stringify(impl(args)) }] } });
-			} catch (e) {
-				return reply({ result: { content: [{ type: 'text', text: (e as Error).message }], isError: true } });
-			}
+		const impl = tools[name];
+		if (!impl) return respond(404, { error: { code: 'NOT_FOUND', message: `No endpoint named \`${name}\`.` } });
+		try {
+			return respond(200, impl(args));
+		} catch (e) {
+			const message = (e as Error).message;
+			return respond(/not found/i.test(message) ? 404 : 400, { error: { code: 'TOOL_ERROR', message } });
 		}
-		return reply({ error: { code: -32601, message: 'Method not found' } });
 	};
 	return { request, calls };
 }
@@ -248,7 +248,11 @@ test('webhook trigger: create makes an automation and switches it on; delete swi
 			automations[id] = { ...automations[id], ...args, _id: id };
 			return { ok: true, message: 'ok', data: { automationId: id } };
 		},
-		automation_get: (args) => automations[args.automationId as string] ?? null,
+		automation_get: (args) => {
+			const found = automations[args.automationId as string];
+			if (!found) throw new Error('Automation not found');
+			return found;
+		},
 	});
 	const state: Json = {};
 	const url = 'https://n8n.example.com/webhook/abc/webhook';

@@ -1,11 +1,11 @@
 import type { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 
-import type { McpClient } from '../transport/mcpClient';
+import type { ApiClient } from '../transport/apiClient';
 
 /** Runs one operation for input item `i` and returns zero or more output items. */
 export type OperationHandler = (
 	ctx: IExecuteFunctions,
-	client: McpClient,
+	client: ApiClient,
 	i: number,
 ) => Promise<IDataObject | IDataObject[]>;
 

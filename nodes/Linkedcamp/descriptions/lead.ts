@@ -1,7 +1,7 @@
 import type { IDataObject, INodeProperties } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
-import { buildRange, callTool, compact } from '../transport/mcp';
+import { buildRange, callApi, compact } from '../transport/request';
 import {
 	asArray,
 	asObject,
@@ -426,7 +426,7 @@ export const leadHandlers: HandlerMap = {
 			personalization: extra.personalization,
 			customFields: keyValuePairs(extra.customFields),
 		});
-		return asObject(await callTool(ctx, client, 'lead_add', args, i));
+		return asObject(await callApi(ctx, client, 'lead_add', args, i));
 	},
 
 	async addManyToCampaign(ctx, client, i) {
@@ -471,7 +471,7 @@ export const leadHandlers: HandlerMap = {
 			leads: rows,
 			removeDuplicates: options.removeDuplicates,
 		});
-		return asObject(await callTool(ctx, client, 'campaign_upload_leads', args, i));
+		return asObject(await callApi(ctx, client, 'campaign_upload_leads', args, i));
 	},
 
 	async get(ctx, client, i) {
@@ -481,7 +481,7 @@ export const leadHandlers: HandlerMap = {
 			includeActivities: options.includeActivities,
 			includeMessages: options.includeMessages,
 		});
-		return asObject(await callTool(ctx, client, 'lead_get', args, i));
+		return asObject(await callApi(ctx, client, 'lead_get', args, i));
 	},
 
 	async getMany(ctx, client, i) {
@@ -514,7 +514,7 @@ export const leadHandlers: HandlerMap = {
 			...rest,
 			customFields: keyValuePairs(customFields),
 		});
-		return asObject(await callTool(ctx, client, 'lead_update', args, i));
+		return asObject(await callApi(ctx, client, 'lead_update', args, i));
 	},
 
 	async addNote(ctx, client, i) {
@@ -522,11 +522,11 @@ export const leadHandlers: HandlerMap = {
 			leadId: locatorValue(ctx, 'leadId', i),
 			content: ctx.getNodeParameter('content', i) as string,
 		};
-		return asObject(await callTool(ctx, client, 'lead_note_add', args, i));
+		return asObject(await callApi(ctx, client, 'lead_note_add', args, i));
 	},
 
 	async addToBlacklist(ctx, client, i) {
 		const args = { leadId: locatorValue(ctx, 'leadId', i) };
-		return asObject(await callTool(ctx, client, 'lead_blacklist', args, i));
+		return asObject(await callApi(ctx, client, 'lead_blacklist', args, i));
 	},
 };

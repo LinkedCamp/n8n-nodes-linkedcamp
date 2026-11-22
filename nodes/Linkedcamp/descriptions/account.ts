@@ -1,10 +1,10 @@
 /**
- * Account (whoami), Client (agency sub-accounts) and Tool (call any MCP tool).
+ * Account (whoami), Client (agency sub-accounts) and Tool (call any API v2 endpoint).
  */
 import type { IDataObject, INodeProperties } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
-import { callTool, compact } from '../transport/mcp';
+import { callApi, compact } from '../transport/request';
 import { asObject, collectPages, returnAllAndLimit } from '../shared';
 import type { HandlerMap } from './types';
 
@@ -29,7 +29,7 @@ export const accountOperations: INodeProperties = {
 
 export const accountHandlers: HandlerMap = {
 	async get(ctx, client, i) {
-		return asObject(await callTool(ctx, client, 'whoami', {}, i));
+		return asObject(await callApi(ctx, client, 'whoami', {}, i));
 	},
 };
 
@@ -100,7 +100,7 @@ export const toolOperations: INodeProperties = {
 		{
 			name: 'Call Any Tool',
 			value: 'call',
-			description: 'Call any Linkedcamp MCP tool by name with JSON arguments. For advanced users.',
+			description: 'Call any Linkedcamp API v2 endpoint by name with JSON arguments. For advanced users.',
 			action: 'Call a tool',
 		},
 	],
@@ -109,14 +109,14 @@ export const toolOperations: INodeProperties = {
 
 export const toolFields: INodeProperties[] = [
 	{
-		displayName: 'Tool Name or ID',
+		displayName: 'Endpoint Name or ID',
 		name: 'toolName',
 		type: 'options',
 		typeOptions: { loadOptionsMethod: 'getTools' },
 		required: true,
 		default: '',
 		description:
-			'The MCP tool to call. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			'The API v2 endpoint to call. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		displayOptions: { show: { resource: ['tool'], operation: ['call'] } },
 	},
 	{
@@ -125,7 +125,7 @@ export const toolFields: INodeProperties[] = [
 		type: 'json',
 		default: '{}',
 		description:
-			'Arguments as a JSON object. See the tool list at https://docs.linkedcamp.com/mcp/overview.',
+			'Arguments as a JSON object. See the endpoint reference at https://docs.linkedcamp.com/api-v2/overview.',
 		displayOptions: { show: { resource: ['tool'], operation: ['call'] } },
 	},
 ];
@@ -145,7 +145,7 @@ export const toolHandlers: HandlerMap = {
 		if (typeof args !== 'object' || args === null || Array.isArray(args)) {
 			throw new NodeOperationError(ctx.getNode(), "'Arguments (JSON)' must be a JSON object", { itemIndex: i });
 		}
-		const out = await callTool(ctx, client, name, args as IDataObject, i);
+		const out = await callApi(ctx, client, name, args as IDataObject, i);
 		return typeof out === 'object' && out !== null && !Array.isArray(out)
 			? (out as IDataObject)
 			: { result: out as IDataObject[] };

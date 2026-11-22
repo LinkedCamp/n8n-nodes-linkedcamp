@@ -1,6 +1,6 @@
 import type { IDataObject, INodeProperties } from 'n8n-workflow';
 
-import { buildRange, callTool, compact } from '../transport/mcp';
+import { buildRange, callApi, compact } from '../transport/request';
 import {
 	asObject,
 	clientLocator,
@@ -261,13 +261,13 @@ export const campaignHandlers: HandlerMap = {
 	async create(ctx, client, i) {
 		const extra = ctx.getNodeParameter('additionalFields', i, {}) as IDataObject;
 		const args = compact({ title: ctx.getNodeParameter('title', i) as string, sourceUrl: extra.sourceUrl });
-		return asObject(await callTool(ctx, client, 'campaign_create', args, i));
+		return asObject(await callApi(ctx, client, 'campaign_create', args, i));
 	},
 
 	async get(ctx, client, i) {
 		const options = ctx.getNodeParameter('options', i, {}) as IDataObject;
 		const args = compact({ campaignId: locatorValue(ctx, 'campaignId', i), includeFlow: options.includeFlow });
-		return asObject(await callTool(ctx, client, 'campaign_get', args, i));
+		return asObject(await callApi(ctx, client, 'campaign_get', args, i));
 	},
 
 	async getMany(ctx, client, i) {
@@ -292,13 +292,13 @@ export const campaignHandlers: HandlerMap = {
 			campaignId: locatorValue(ctx, 'campaignId', i),
 			status: ctx.getNodeParameter('status', i) as string,
 		};
-		return asObject(await callTool(ctx, client, 'campaign_set_status', args, i));
+		return asObject(await callApi(ctx, client, 'campaign_set_status', args, i));
 	},
 
 	async launch(ctx, client, i) {
 		const options = ctx.getNodeParameter('options', i, {}) as IDataObject;
 		const args = compact({ campaignId: locatorValue(ctx, 'campaignId', i), skipPreflight: options.skipPreflight });
-		return asObject(await callTool(ctx, client, 'campaign_launch', args, i));
+		return asObject(await callApi(ctx, client, 'campaign_launch', args, i));
 	},
 
 	async getStats(ctx, client, i) {
@@ -309,7 +309,7 @@ export const campaignHandlers: HandlerMap = {
 			range: buildRange(options.dateFrom, options.dateTo),
 			includeGraph: options.includeGraph,
 		});
-		return asObject(await callTool(ctx, client, 'analytics_campaign', args, i));
+		return asObject(await callApi(ctx, client, 'analytics_campaign', args, i));
 	},
 
 	async getFunnel(ctx, client, i) {
@@ -318,6 +318,6 @@ export const campaignHandlers: HandlerMap = {
 			campaignId: locatorValue(ctx, 'campaignId', i),
 			range: buildRange(options.dateFrom, options.dateTo),
 		});
-		return asObject(await callTool(ctx, client, 'analytics_campaign_funnel', args, i));
+		return asObject(await callApi(ctx, client, 'analytics_campaign_funnel', args, i));
 	},
 };

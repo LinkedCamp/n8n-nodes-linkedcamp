@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"{\n  \"total\": 1,\n  \"page\": 1,\n  \"campaigns\": [\n    {\n      \"_id\": \"c1\",\n      \"title\": \"Test campaign\",\n      \"status\": \"PAUSED\"\n    }\n  ]\n}"}]}}

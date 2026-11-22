@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","error":{"code":-32001,"message":"Not authenticated. Connect through OAuth, or send your LinkedCamp API key as \"Authorization: Bearer <key>\" or \"X-Api-Key: <key>\". Your key is at https://app.linkedcamp.com/settings/integrations."},"id":null}

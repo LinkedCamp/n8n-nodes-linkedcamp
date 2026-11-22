@@ -13,7 +13,7 @@ export class LinkedcampApi implements ICredentialType {
 
 	icon: Icon = { light: 'file:../nodes/Linkedcamp/linkedcamp.svg', dark: 'file:../nodes/Linkedcamp/linkedcamp.svg' };
 
-	documentationUrl = 'https://docs.linkedcamp.com/mcp/quickstart';
+	documentationUrl = 'https://docs.linkedcamp.com/api-v2/overview';
 
 	properties: INodeProperties[] = [
 		{
@@ -37,38 +37,15 @@ export class LinkedcampApi implements ICredentialType {
 		},
 	};
 
-	/**
-	 * The MCP server accepts any well-formed key at `initialize`, so the test
-	 * calls the read-only `whoami` tool instead: a wrong key comes back as
-	 * `result.isError: true` (HTTP 200), a missing or malformed one as HTTP 401.
-	 */
+	/** A wrong, rotated or missing key gets HTTP 401 from `whoami`. */
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://mcp.linkedcamp.com',
-			url: '/mcp',
+			baseURL: 'https://api.linkedcamp.com/v2',
+			url: '/whoami',
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Accept: 'application/json, text/event-stream',
-				'MCP-Protocol-Version': '2025-06-18',
-			},
-			body: {
-				jsonrpc: '2.0',
-				id: 1,
-				method: 'tools/call',
-				params: { name: 'whoami', arguments: {} },
-			},
+			headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+			body: {},
 			json: true,
 		},
-		rules: [
-			{
-				type: 'responseSuccessBody',
-				properties: {
-					key: 'result.isError',
-					value: true,
-					message: 'Linkedcamp did not accept this API key. Copy it again from Settings → Integrations → API.',
-				},
-			},
-		],
 	};
 }

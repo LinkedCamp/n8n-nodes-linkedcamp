@@ -7,7 +7,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-import { createMcpClient, toNodeError } from './transport/mcp';
+import { createClient, toNodeError } from './transport/request';
 import { listSearch, loadOptions } from './shared';
 import type { HandlerMap } from './descriptions/types';
 import { accountHandlers, accountOperations, clientFields, clientHandlers, clientOperations, toolFields, toolHandlers, toolOperations } from './descriptions/account';
@@ -74,7 +74,7 @@ export class Linkedcamp implements INodeType {
 					{ name: 'Reminder', value: 'reminder' },
 					{ name: 'Tag', value: 'tag' },
 					{ name: 'Task', value: 'task' },
-					{ name: 'Tool', value: 'tool', description: 'Call any Linkedcamp MCP tool' },
+					{ name: 'Tool', value: 'tool', description: 'Call any Linkedcamp API v2 endpoint' },
 				],
 				default: 'lead',
 			},
@@ -107,51 +107,47 @@ export class Linkedcamp implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-		const client = createMcpClient(this);
+		const client = createClient(this);
 
-		try {
-			for (let i = 0; i < items.length; i++) {
-				try {
-					const resource = this.getNodeParameter('resource', i) as string;
-					const operation = this.getNodeParameter('operation', i) as string;
-					const handler = HANDLERS[resource]?.[operation];
-					if (!handler) {
-						throw new NodeOperationError(
-							this.getNode(),
-							`The operation "${operation}" is not supported for resource "${resource}"`,
-							{ itemIndex: i },
-						);
-					}
-
-					const result = await handler(this, client, i);
-					const rows: IDataObject[] = Array.isArray(result) ? result : [result];
-					returnData.push(
-						...this.helpers.constructExecutionMetaData(this.helpers.returnJsonArray(rows), {
-							itemData: { item: i },
-						}),
+		for (let i = 0; i < items.length; i++) {
+			try {
+				const resource = this.getNodeParameter('resource', i) as string;
+				const operation = this.getNodeParameter('operation', i) as string;
+				const handler = HANDLERS[resource]?.[operation];
+				if (!handler) {
+					throw new NodeOperationError(
+						this.getNode(),
+						`The operation "${operation}" is not supported for resource "${resource}"`,
+						{ itemIndex: i },
 					);
-
-					// "Add Many to Campaign" from input items uploads every item in one call.
-					if (
-						resource === 'lead' &&
-						operation === 'addManyToCampaign' &&
-						this.getNodeParameter('rowsSource', i, 'items') === 'items'
-					) {
-						break;
-					}
-				} catch (error) {
-					if (this.continueOnFail()) {
-						returnData.push({
-							json: { error: (error as Error).message },
-							pairedItem: { item: i },
-						});
-						continue;
-					}
-					throw toNodeError(this, error, i);
 				}
+
+				const result = await handler(this, client, i);
+				const rows: IDataObject[] = Array.isArray(result) ? result : [result];
+				returnData.push(
+					...this.helpers.constructExecutionMetaData(this.helpers.returnJsonArray(rows), {
+						itemData: { item: i },
+					}),
+				);
+
+				// "Add Many to Campaign" from input items uploads every item in one call.
+				if (
+					resource === 'lead' &&
+					operation === 'addManyToCampaign' &&
+					this.getNodeParameter('rowsSource', i, 'items') === 'items'
+				) {
+					break;
+				}
+			} catch (error) {
+				if (this.continueOnFail()) {
+					returnData.push({
+						json: { error: (error as Error).message },
+						pairedItem: { item: i },
+					});
+					continue;
+				}
+				throw toNodeError(this, error, i);
 			}
-		} finally {
-			await client.close();
 		}
 
 		return [returnData];

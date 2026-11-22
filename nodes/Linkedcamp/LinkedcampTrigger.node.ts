@@ -8,16 +8,17 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-import { createMcpClient, toNodeError } from './transport/mcp';
-import { McpError } from './transport/mcpClient';
+import { createClient, toNodeError } from './transport/request';
+import { LinkedcampApiError } from './transport/apiClient';
 import { asArray, asObject, listSearch, nestedLocator, optionalLocator } from './shared';
 
 /**
  * Instant trigger.
  *
  * Linkedcamp delivers events through "automations": a trigger node wired to a
- * WEBHOOK integration node. The REST `/webhooks` endpoints are deprecated, so
- * this node manages its automation over the MCP server with the same API key:
+ * WEBHOOK integration node. The legacy REST `/webhooks` endpoints cannot see or
+ * switch on these automations, so this node manages its automation through
+ * the REST API v2 automation endpoints with the same API key:
  *
  *   subscribe   → automation_upsert (create), then automation_upsert with
  *                 `flow` + `isActive: true` (the update recomputes `sequences`,
@@ -95,7 +96,7 @@ function webhookUrlOf(automation: IDataObject): string | undefined {
 }
 
 function isNotFound(error: unknown): boolean {
-	return error instanceof McpError && error.kind === 'tool' && /not found|invalid|no automation/i.test(error.message);
+	return error instanceof LinkedcampApiError && error.kind === 'notFound';
 }
 
 interface TriggerState {
@@ -159,10 +160,10 @@ export class LinkedcampTrigger implements INodeType {
 			async checkExists(this: IHookFunctions): Promise<boolean> {
 				const state = this.getWorkflowStaticData('node') as TriggerState;
 				if (!state.automationId) return false;
-				const client = createMcpClient(this);
+				const client = createClient(this);
 				try {
 					const automation = asObject(
-						await client.callTool('automation_get', { automationId: state.automationId }),
+						await client.call('automation_get', { automationId: state.automationId }),
 					);
 					if (!automation._id) return false;
 					return automation.isActive === true && webhookUrlOf(automation) === this.getNodeWebhookUrl('default');
@@ -172,8 +173,6 @@ export class LinkedcampTrigger implements INodeType {
 						return false;
 					}
 					throw toNodeError(this, error);
-				} finally {
-					await client.close();
 				}
 			},
 
@@ -186,12 +185,12 @@ export class LinkedcampTrigger implements INodeType {
 				const title = `n8n – ${eventLabel(event)}`;
 				const description = `Sends "${eventLabel(event)}" events to an n8n workflow. Managed by the n8n Linkedcamp Trigger node.`;
 
-				const client = createMcpClient(this);
+				const client = createClient(this);
 				try {
 					let automationId = state.automationId;
 					if (!automationId) {
 						const created = asObject(
-							await client.callTool('automation_upsert', { title, description, flow, isActive: false }),
+							await client.call('automation_upsert', { title, description, flow, isActive: false }),
 						);
 						const id = asObject(created.data).automationId;
 						if (typeof id !== 'string' || !id) {
@@ -201,7 +200,7 @@ export class LinkedcampTrigger implements INodeType {
 						state.automationId = id;
 					}
 					// The update (with `flow`) is what sets `sequences` and turns it on.
-					await client.callTool('automation_upsert', {
+					await client.call('automation_upsert', {
 						_id: automationId,
 						title,
 						description,
@@ -211,8 +210,6 @@ export class LinkedcampTrigger implements INodeType {
 					return true;
 				} catch (error) {
 					throw toNodeError(this, error);
-				} finally {
-					await client.close();
 				}
 			},
 
@@ -220,9 +217,9 @@ export class LinkedcampTrigger implements INodeType {
 				const state = this.getWorkflowStaticData('node') as TriggerState;
 				if (!state.automationId) return true;
 				const event = this.getNodeParameter('event') as string;
-				const client = createMcpClient(this);
+				const client = createClient(this);
 				try {
-					await client.callTool('automation_upsert', {
+					await client.call('automation_upsert', {
 						_id: state.automationId,
 						title: `n8n – ${eventLabel(event)}`,
 						description: `Switched off: the n8n workflow using it was deactivated.`,
@@ -235,8 +232,6 @@ export class LinkedcampTrigger implements INodeType {
 						return true;
 					}
 					return false;
-				} finally {
-					await client.close();
 				}
 			},
 		},

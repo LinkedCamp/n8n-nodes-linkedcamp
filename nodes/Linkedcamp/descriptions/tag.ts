@@ -1,6 +1,6 @@
 import type { IDataObject, INodeProperties } from 'n8n-workflow';
 
-import { callTool, compact } from '../transport/mcp';
+import { callApi, compact } from '../transport/request';
 import { asArray, asObject, clientLocator, nestedLocator, returnAllAndLimit } from '../shared';
 import type { HandlerMap } from './types';
 
@@ -70,13 +70,13 @@ export const tagHandlers: HandlerMap = {
 			content: ctx.getNodeParameter('content', i) as string,
 			interest: ctx.getNodeParameter('interest', i) as string,
 		};
-		return asObject(await callTool(ctx, client, 'tag_create', args, i));
+		return asObject(await callApi(ctx, client, 'tag_create', args, i));
 	},
 
 	async getMany(ctx, client, i) {
 		const options = ctx.getNodeParameter('options', i, {}) as IDataObject;
 		const out = asObject(
-			await callTool(ctx, client, 'tag_list', compact({ userId: nestedLocator(options.userId) }), i),
+			await callApi(ctx, client, 'tag_list', compact({ userId: nestedLocator(options.userId) }), i),
 		);
 		const tags = asArray(out.tags);
 		const returnAll = ctx.getNodeParameter('returnAll', i, false) as boolean;

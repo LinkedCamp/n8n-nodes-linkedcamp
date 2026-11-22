@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Dev bootstrap: capture what the live Linkedcamp MCP server really returns.
+ * Dev bootstrap: capture what the live Linkedcamp REST API v2 really returns.
  *
  *   LINKEDCAMP_TEST_API_KEY=... node dev/bootstrap.mjs
  *
@@ -16,7 +16,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ENDPOINT = 'https://mcp.linkedcamp.com/mcp';
+const BASE = 'https://api.linkedcamp.com/v2';
 const OUT = join(dirname(fileURLToPath(import.meta.url)), 'captures');
 const KEY = process.env.LINKEDCAMP_TEST_API_KEY;
 
@@ -61,60 +61,22 @@ const EXPECTED_ARGS = {
 
 /* ------------------------------- transport ------------------------------- */
 
-let nextId = 1;
-let sessionId;
-let protocolVersion = '2025-06-18';
-const transport = { sessionIdIssued: false, contentTypes: new Set(), structuredContentSeen: false };
-
-async function rpc(method, params, { notify = false } = {}) {
-	const headers = {
-		'Content-Type': 'application/json',
-		Accept: 'application/json, text/event-stream',
-		'X-Api-Key': KEY,
-	};
-	if (method !== 'initialize') headers['MCP-Protocol-Version'] = protocolVersion;
-	if (sessionId) headers['Mcp-Session-Id'] = sessionId;
-	const id = notify ? undefined : nextId++;
-	const res = await fetch(ENDPOINT, {
-		method: 'POST',
-		headers,
-		body: JSON.stringify({ jsonrpc: '2.0', ...(id ? { id } : {}), method, ...(params ? { params } : {}) }),
-	});
-	const sid = res.headers.get('mcp-session-id');
-	if (sid) {
-		sessionId = sid;
-		transport.sessionIdIssued = true;
-	}
-	const type = res.headers.get('content-type') ?? '';
-	if (type) transport.contentTypes.add(type.split(';')[0]);
-	const text = await res.text();
-	if (notify) return { status: res.status };
-	let messages = [];
-	if (type.includes('text/event-stream')) {
-		for (const block of text.split(/\r?\n\r?\n/)) {
-			const data = block.split(/\r?\n/).filter((l) => l.startsWith('data:')).map((l) => l.slice(5).trim()).join('\n');
-			if (data) messages.push(JSON.parse(data));
-		}
-	} else if (text.trim()) {
-		messages = [JSON.parse(text)];
-	}
-	const msg = messages.find((m) => m.id === id) ?? messages[0];
-	return { status: res.status, msg };
-}
+const results = {};
 
 async function callTool(name, args = {}) {
-	const { status, msg } = await rpc('tools/call', { name, arguments: args });
-	if (msg?.error) return { ok: false, status, error: msg.error };
-	const result = msg?.result ?? {};
-	if (result.structuredContent !== undefined) transport.structuredContentSeen = true;
-	const text = (result.content ?? []).map((c) => c.text ?? '').join('\n');
-	let output;
+	const res = await fetch(`${BASE}/${name}`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-Api-Key': KEY },
+		body: JSON.stringify(args),
+	});
+	const text = await res.text();
+	let body;
 	try {
-		output = result.structuredContent ?? JSON.parse(text);
+		body = text ? JSON.parse(text) : {};
 	} catch {
-		output = { text };
+		body = { text };
 	}
-	return { ok: !result.isError, status, isError: Boolean(result.isError), output };
+	return res.ok ? { ok: true, status: res.status, output: body } : { ok: false, status: res.status, error: body.error ?? body };
 }
 
 /* ------------------------------- anonymise ------------------------------- */
@@ -151,42 +113,35 @@ async function save(name, data) {
 
 await mkdir(OUT, { recursive: true });
 
-const init = await rpc('initialize', {
-	protocolVersion: '2025-06-18',
-	capabilities: {},
-	clientInfo: { name: 'n8n-nodes-linkedcamp-bootstrap', version: '0.1.0' },
-});
-if (!init.msg?.result) {
-	console.error(`initialize failed (HTTP ${init.status}). Check the key; nothing else was called.`);
+const who = await callTool('whoami', {});
+if (!who.ok) {
+	console.error(`whoami failed (HTTP ${who.status}). Check the key; nothing else was called.`);
 	process.exit(1);
 }
-protocolVersion = init.msg.result.protocolVersion ?? protocolVersion;
-const ack = await rpc('notifications/initialized', undefined, { notify: true });
-console.log(`initialize OK (protocol ${protocolVersion}); notifications/initialized → HTTP ${ack.status}`);
+console.log('whoami OK');
 
-// tools/list + schema diff
-const tools = [];
-let cursor;
-do {
-	const { msg } = await rpc('tools/list', cursor ? { cursor } : {});
-	tools.push(...(msg?.result?.tools ?? []));
-	cursor = msg?.result?.nextCursor;
-} while (cursor);
-await save('tools-list.json', tools.map((t) => ({ name: t.name, inputSchema: t.inputSchema, outputSchema: t.outputSchema, annotations: t.annotations })));
+// OpenAPI spec + schema diff
+const spec = await (await fetch(`${BASE}/openapi.json`)).json();
+const endpoints = Object.entries(spec.paths ?? {}).map(([path, item]) => ({
+	name: path.slice(1),
+	inputSchema: item.post?.requestBody?.content?.['application/json']?.schema,
+	readOnly: item.post?.['x-read-only'],
+	destructive: item.post?.['x-destructive'],
+}));
+await save('endpoints.json', endpoints);
 
 const diff = {};
-const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
+const byName = Object.fromEntries(endpoints.map((t) => [t.name, t]));
 for (const [name, expected] of Object.entries(EXPECTED_ARGS)) {
 	const tool = byName[name];
 	if (!tool) {
-		diff[name] = { missing: 'not in tools/list for this key (hidden by plan, permission or tier?)' };
+		diff[name] = { missing: 'not in /v2/openapi.json' };
 		continue;
 	}
 	const actual = Object.keys(tool.inputSchema?.properties ?? {});
 	const notOnServer = expected.filter((a) => !actual.includes(a));
 	const notInNode = actual.filter((a) => !expected.includes(a) && !['startDate', 'endDate'].includes(a));
 	if (notOnServer.length || notInNode.length) diff[name] = { notOnServer, notInNode };
-	if (tool.outputSchema) (diff[name] ??= {}).hasOutputSchema = true;
 }
 await save('schema-diff.json', diff);
 console.log(Object.keys(diff).length ? `  schema differences: ${Object.keys(diff).join(', ')} (see schema-diff.json → QUESTIONS.md)` : '  input schemas match the node');
@@ -198,10 +153,9 @@ for (const topic of ['leads', 'campaign']) {
 }
 
 // read-only tools
-const results = {};
 async function capture(file, name, args) {
 	const r = await callTool(name, args);
-	results[name] = { ok: r.ok, status: r.status, isError: r.isError ?? false, error: r.error };
+	results[name] = { ok: r.ok, status: r.status, error: r.error };
 	await save(file, anonymise({ tool: name, args, ...r }));
 	return r;
 }
@@ -230,13 +184,9 @@ await capture('linkedin_account_list.json', 'linkedin_account_list', {});
 await capture('subaccount_list.json', 'subaccount_list', { page: 1, pageSize: 5 });
 await capture('automation_list.json', 'automation_list', {});
 
-await save('transport.json', {
+await save('summary.json', {
 	capturedAt: new Date().toISOString(),
-	protocolVersion,
-	sessionIdIssued: transport.sessionIdIssued,
-	contentTypes: [...transport.contentTypes],
-	structuredContentSeen: transport.structuredContentSeen,
-	toolCount: tools.length,
+	endpointCount: endpoints.length,
 	results,
 });
 console.log('Done. Review dev/captures/ before committing.');

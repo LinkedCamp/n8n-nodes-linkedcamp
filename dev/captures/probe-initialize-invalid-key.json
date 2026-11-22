@@ -1,9 +1,0 @@
-{
-  "capturedAt": "2026-11-21",
-  "note": "initialize with X-Api-Key set to a random UUID (not a real key). Accepted: the server only checks the key format at this stage. No mcp-session-id header was returned; body is plain JSON (not SSE). 'instructions' trimmed.",
-  "response": {
-    "status": 200,
-    "headers": { "content-type": "application/json", "mcp-session-id": null },
-    "body": {"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{},"resources":{"listChanged":true,"subscribe":true},"prompts":{"listChanged":true},"logging":{},"completions":{}},"serverInfo":{"name":"linkedcamp","title":"LinkedCamp — outreach automation","version":"1.1.0","websiteUrl":"https://linkedcamp.com"},"instructions":"[trimmed]"},"jsonrpc":"2.0","id":1}
-  }
-}

@@ -7,8 +7,8 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes } from 'n8n-workflow';
 
-import type { McpClient } from './transport/mcpClient';
-import { compact, createMcpClient, toNodeError } from './transport/mcp';
+import type { ApiClient } from './transport/apiClient';
+import { compact, createClient, toNodeError } from './transport/request';
 import { asArray, asObject, listSearch, nestedLocator, optionalLocator } from './shared';
 
 /** How far back each lead poll reaches before the previous poll, to absorb clock skew. */
@@ -28,17 +28,17 @@ interface PollState {
 type EventName = 'newAppointment' | 'newCampaign' | 'newRepliedLead' | 'newConnectedLead';
 
 async function fetchItems(
-	client: McpClient,
+	client: ApiClient,
 	event: EventName,
 	window: { from: number; to: number },
 	campaignId: string,
 ): Promise<IDataObject[]> {
 	if (event === 'newAppointment') {
-		const out = asObject(await client.callTool('appointment_list', { status: 'CONFIRMED', page: 1 }));
+		const out = asObject(await client.call('appointment_list', { status: 'CONFIRMED', page: 1 }));
 		return asArray(out.appointments);
 	}
 	if (event === 'newCampaign') {
-		const out = asObject(await client.callTool('campaign_list', { page: 1 }));
+		const out = asObject(await client.call('campaign_list', { page: 1 }));
 		return asArray(out.campaigns);
 	}
 
@@ -47,7 +47,7 @@ async function fetchItems(
 	const leads: IDataObject[] = [];
 	for (let page = 1; page <= MAX_LEAD_PAGES; page++) {
 		const out = asObject(
-			await client.callTool(
+			await client.call(
 				'lead_list',
 				compact({ status, campaignId, range: window, page, pageSize: 100 }),
 			),
@@ -130,14 +130,12 @@ export class LinkedcampPollTrigger implements INodeType {
 		const now = Date.now();
 
 		const from = firstRun ? now - MANUAL_LOOKBACK_MS : (state.lastPoll as number) - OVERLAP_MS;
-		const client = createMcpClient(this);
+		const client = createClient(this);
 		let items: IDataObject[];
 		try {
 			items = await fetchItems(client, event, { from, to: now }, campaignId);
 		} catch (error) {
 			throw toNodeError(this, error);
-		} finally {
-			await client.close();
 		}
 
 		const seen = new Set(state.seenIds ?? []);

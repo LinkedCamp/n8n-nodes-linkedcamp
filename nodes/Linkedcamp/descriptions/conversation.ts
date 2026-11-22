@@ -1,6 +1,6 @@
 import type { IDataObject, INodeProperties } from 'n8n-workflow';
 
-import { callTool, compact } from '../transport/mcp';
+import { callApi, compact } from '../transport/request';
 import {
 	asObject,
 	collectPages,
@@ -278,7 +278,7 @@ export const conversationHandlers: HandlerMap = {
 			conversationId: locatorValue(ctx, 'conversationId', i),
 			includeMessages: options.includeMessages,
 		});
-		return asObject(await callTool(ctx, client, 'conversation_get', args, i));
+		return asObject(await callApi(ctx, client, 'conversation_get', args, i));
 	},
 
 	async getMany(ctx, client, i) {
@@ -305,7 +305,7 @@ export const conversationHandlers: HandlerMap = {
 	async update(ctx, client, i) {
 		const fields = ctx.getNodeParameter('updateFields', i, {}) as IDataObject;
 		const args = compact({ conversationId: locatorValue(ctx, 'conversationId', i), ...fields });
-		return asObject(await callTool(ctx, client, 'conversation_update', args, i));
+		return asObject(await callApi(ctx, client, 'conversation_update', args, i));
 	},
 
 	async sendMessage(ctx, client, i) {
@@ -315,7 +315,7 @@ export const conversationHandlers: HandlerMap = {
 			content: ctx.getNodeParameter('content', i) as string,
 			attachment: attachment.url ? compact({ url: attachment.url, name: attachment.name, type: attachment.type }) : undefined,
 		});
-		return asObject(await callTool(ctx, client, 'message_send', args, i));
+		return asObject(await callApi(ctx, client, 'message_send', args, i));
 	},
 
 	async draftAiReply(ctx, client, i) {
@@ -324,6 +324,6 @@ export const conversationHandlers: HandlerMap = {
 			provider: ctx.getNodeParameter('provider', i) as string,
 			prompt: ctx.getNodeParameter('prompt', i) as string,
 		};
-		return asObject(await callTool(ctx, client, 'message_draft_ai_reply', args, i));
+		return asObject(await callApi(ctx, client, 'message_draft_ai_reply', args, i));
 	},
 };

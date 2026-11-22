@@ -8,8 +8,8 @@ import type {
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
-import type { McpClient } from './transport/mcpClient';
-import { callTool, createMcpClient, toNodeError } from './transport/mcp';
+import type { ApiClient } from './transport/apiClient';
+import { callApi, createClient, toNodeError } from './transport/request';
 
 /* -------------------------------------------------------------------------- */
 /*                               Value helpers                                */
@@ -75,7 +75,7 @@ export function pick(record: IDataObject, keys: string[]): IDataObject {
  */
 export async function collectPages(
 	ctx: IExecuteFunctions,
-	client: McpClient,
+	client: ApiClient,
 	tool: string,
 	args: IDataObject,
 	listKey: string,
@@ -86,7 +86,7 @@ export async function collectPages(
 	for (let page = 1; page <= 1000; page++) {
 		const callArgs: IDataObject = { ...args, page };
 		if (opts.pageSizeArg) callArgs[opts.pageSizeArg] = opts.pageSize;
-		const out = asObject(await callTool(ctx, client, tool, callArgs, opts.i));
+		const out = asObject(await callApi(ctx, client, tool, callArgs, opts.i));
 		const batch = asArray(out[listKey]);
 		items.push(...batch);
 		const total = typeof out.total === 'number' ? out.total : undefined;
@@ -262,7 +262,7 @@ export const customFieldsCollection: INodeProperties = {
 	],
 };
 
-/** Lead statuses, copied from the Linkedcamp MCP server's `lead_list` enum. */
+/** Lead statuses accepted by the Linkedcamp API v2 `lead_list` filter. */
 export const LEAD_STATUSES = [
 	'FOUND',
 	'VIEWED',
@@ -313,9 +313,9 @@ async function search(
 	listKey: string,
 	toResult: (item: IDataObject) => { name: string; value: string; url?: string } | undefined,
 ): Promise<INodeListSearchResult> {
-	const client = createMcpClient(ctx);
+	const client = createClient(ctx);
 	try {
-		const out = asObject(await client.callTool(tool, args));
+		const out = asObject(await client.call(tool, args));
 		const results = asArray(out[listKey])
 			.map(toResult)
 			.filter((r): r is { name: string; value: string; url?: string } => Boolean(r?.value));
@@ -326,8 +326,6 @@ async function search(
 		return { results, paginationToken: more && results.length ? String(page + 1) : undefined };
 	} catch (error) {
 		throw toNodeError(ctx, error);
-	} finally {
-		await client.close();
 	}
 }
 
@@ -407,9 +405,9 @@ export const listSearch = {
 		paginationToken?: string,
 	): Promise<INodeListSearchResult> {
 		// Only an account owner may read sub-accounts; say so instead of an empty list.
-		const client = createMcpClient(this);
+		const client = createClient(this);
 		try {
-			const me = asObject(await client.callTool('whoami', {}));
+			const me = asObject(await client.call('whoami', {}));
 			if (me.role !== undefined && me.role !== 'OWNER') {
 				throw new NodeOperationError(
 					this.getNode(),
@@ -418,8 +416,6 @@ export const listSearch = {
 			}
 		} catch (error) {
 			throw toNodeError(this, error);
-		} finally {
-			await client.close();
 		}
 		return await search(
 			this,
@@ -436,9 +432,9 @@ export const listSearch = {
 
 export const loadOptions = {
 	async getTools(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-		const client = createMcpClient(this);
+		const client = createClient(this);
 		try {
-			const tools = await client.listTools();
+			const tools = await client.listEndpoints();
 			return tools
 				.map((t) => ({
 					name: t.name,
@@ -448,8 +444,6 @@ export const loadOptions = {
 				.sort((a, b) => a.name.localeCompare(b.name));
 		} catch (error) {
 			throw toNodeError(this, error);
-		} finally {
-			await client.close();
 		}
 	},
 };

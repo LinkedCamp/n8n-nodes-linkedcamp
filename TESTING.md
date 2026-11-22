@@ -1,32 +1,26 @@
 # Testing log
 
-## Automated (no network): done on 21 Nov 2026
+## Automated (no network): updated on 22 Nov 2026
 
 | Check | Result |
 |---|---|
 | `npm run lint` | Pass, 0 errors, 0 warnings |
 | `npm run build` | Pass |
-| `npm test` | 27 of 27 pass |
+| `npm test` | 24 of 24 pass |
+| `npx @n8n/scan-community-package` on the packed package | Pass (see below) |
 
-`test/mcpClient.test.ts` covers the transport:
+`test/apiClient.test.ts` covers the REST API v2 client:
 
-- structuredContent
-- text-only JSON
-- plain text
-- SSE with a progress notification
-- `isError`
-- `-32001` with HTTP 401 and with HTTP 200
-- HTTP 403
-- other JSON-RPC errors
-- 404 → re-initialise → success
-- a second 404 is not retried
-- session reuse
-- DELETE on close
-- a replay of the live invalid-key capture
+- the request shape (`POST /v2/<endpoint>` with JSON arguments)
+- body parsing: text, pre-parsed, empty, non-JSON
+- 401, 403, 404, 400, 422 and 5xx mapping, using the server's own message and hint
+- no retries
+- reading endpoints from `openapi.json`
+- three live captures: no key, a wrong key, and an unknown endpoint
 
-`test/nodes.test.ts` drives the built nodes with a fake n8n context and a fake MCP server:
+`test/nodes.test.ts` drives the built nodes with a fake n8n context and a fake REST API v2:
 
-- the mapping from fields to tool arguments
+- the mapping from fields to endpoint arguments
 - Return All pagination and Limit
 - Simplify
 - epoch-ms ranges
@@ -37,14 +31,13 @@
 - webhook create, check, delete and reuse
 - the webhook payload passing through unchanged
 
-## Live probes (no account touched): done on 21 Nov 2026
+## Live probes (no account touched): done on 22 Nov 2026
 
-See `dev/captures/probe-*.json`:
+See `dev/captures/probe-api-v2.json`:
 
-- `initialize` with no key → HTTP 401 with JSON-RPC `-32001`
-- `initialize` with a random UUID → HTTP 200, plain JSON, no `mcp-session-id`
-- `tools/call whoami` with a random UUID, sent without `initialize` → HTTP 200 with `result.isError: true`
-- `notifications/initialized` → HTTP 202
+- `POST /v2/whoami` with no key → HTTP 401 `UNAUTHENTICATED`
+- `POST /v2/whoami` with a random UUID → HTTP 401 `UNAUTHENTICATED` (this is what the credential test relies on)
+- `POST /v2/no_such_endpoint` → HTTP 404 `NOT_FOUND`
 
 ## Pending: needs `LINKEDCAMP_TEST_API_KEY` and Arslan
 

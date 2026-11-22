@@ -9,31 +9,30 @@ import type {
 } from 'n8n-workflow';
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
-import { McpClient, McpError } from './mcpClient';
-import type { McpRawResponse, McpSender } from './mcpClient';
+import { API_BASE_URL, ApiClient, LinkedcampApiError } from './apiClient';
+import type { ApiRawResponse, ApiSender } from './apiClient';
 
-export const MCP_URL = 'https://mcp.linkedcamp.com/mcp';
 export const CREDENTIAL_NAME = 'linkedcampApi';
-
-/** Kept in step with package.json by `npm run release`; only reported to the server. */
-export const CLIENT_INFO = { name: '@linkedcampai/n8n-nodes-linkedcamp', version: '0.1.0' };
 
 export type LinkedcampContext = IExecuteFunctions | ILoadOptionsFunctions | IPollFunctions | IHookFunctions;
 
-/** Build an MCP client that sends every request through the n8n credential. */
-export function createMcpClient(ctx: LinkedcampContext): McpClient {
-	const send: McpSender = async ({ method, headers, body }) => {
+/** Build an API client that sends every request through the n8n credential. */
+export function createClient(ctx: LinkedcampContext): ApiClient {
+	const send: ApiSender = async ({ method, path, body }) => {
 		const options: IHttpRequestOptions = {
 			method,
-			url: MCP_URL,
-			headers,
+			url: `${API_BASE_URL}${path}`,
+			headers: { Accept: 'application/json' },
 			json: false,
 			encoding: 'text',
 			returnFullResponse: true,
 			ignoreHttpStatusErrors: true,
-			timeout: 60000,
+			timeout: 120000,
 		};
-		if (body !== undefined) options.body = JSON.stringify(body);
+		if (body !== undefined) {
+			options.body = JSON.stringify(body);
+			(options.headers as IDataObject)['Content-Type'] = 'application/json';
+		}
 
 		const response = (await ctx.helpers.httpRequestWithAuthentication.call(
 			ctx,
@@ -41,50 +40,47 @@ export function createMcpClient(ctx: LinkedcampContext): McpClient {
 			options,
 		)) as { statusCode?: number; headers?: Record<string, unknown>; body?: unknown };
 
-		const raw: McpRawResponse = {
+		const raw: ApiRawResponse = {
 			statusCode: response.statusCode ?? 0,
 			headers: response.headers ?? {},
 			body: response.body,
 		};
 		return raw;
 	};
-	return new McpClient(send, CLIENT_INFO);
+	return new ApiClient(send);
 }
 
-/** Convert a transport error into the n8n error class the UI expects. */
+/** Convert an API error into the n8n error class the UI expects. */
 export function toNodeError(
 	ctx: LinkedcampContext,
 	error: unknown,
 	itemIndex?: number,
 ): NodeApiError | NodeOperationError {
 	if (error instanceof NodeApiError || error instanceof NodeOperationError) return error;
-	if (error instanceof McpError) {
-		if (error.kind === 'tool') {
+	if (error instanceof LinkedcampApiError) {
+		// The record or the input is the problem: something the user can fix in the node.
+		if (error.kind === 'notFound' || error.kind === 'invalid') {
 			return new NodeOperationError(ctx.getNode(), error.message, { itemIndex });
 		}
 		return new NodeApiError(
 			ctx.getNode(),
-			{ message: error.message, code: error.rpcCode ?? null } as JsonObject,
-			{
-				message: error.message,
-				httpCode: error.httpCode !== undefined ? String(error.httpCode) : undefined,
-				itemIndex,
-			},
+			{ message: error.message, code: error.code ?? null } as JsonObject,
+			{ message: error.message, httpCode: String(error.httpCode), itemIndex },
 		);
 	}
 	return new NodeApiError(ctx.getNode(), error as JsonObject, { itemIndex });
 }
 
-/** Call one tool, mapping failures to n8n errors. */
-export async function callTool(
+/** Call one endpoint, mapping failures to n8n errors. */
+export async function callApi(
 	ctx: LinkedcampContext,
-	client: McpClient,
-	name: string,
+	client: ApiClient,
+	endpoint: string,
 	args: IDataObject = {},
 	itemIndex?: number,
 ): Promise<unknown> {
 	try {
-		return await client.callTool(name, args);
+		return await client.call(endpoint, args);
 	} catch (error) {
 		throw toNodeError(ctx, error, itemIndex);
 	}
@@ -103,8 +99,8 @@ export function compact(args: IDataObject): IDataObject {
 /**
  * Normalise a date field to epoch milliseconds.
  *
- * The server documents ISO 8601 as accepted, but `lead_list` compares the
- * value straight against numeric `updatedAt`, so numbers are the safe form.
+ * The API documents ISO 8601 as accepted, but `lead_list` compares the value
+ * straight against numeric `updatedAt`, so numbers are the safe form.
  */
 export function toEpochMs(value: unknown): number | undefined {
 	if (value === undefined || value === null || value === '') return undefined;

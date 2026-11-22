@@ -1,9 +1,0 @@
-{
-  "capturedAt": "2026-11-21",
-  "note": "tools/call whoami with a random-UUID key, sent WITHOUT initialize (stateless server accepts it). A wrong key surfaces as result.isError, HTTP 200. notifications/initialized answered 202.",
-  "response": {
-    "status": 200,
-    "headers": { "content-type": "application/json" },
-    "body": {"result":{"content":[{"type":"text","text":"Internal server error\n\nHint: The key may have been rotated in Settings → Integrations. Re-copy it, then reconnect."}],"isError":true},"jsonrpc":"2.0","id":2}
-  }
-}
