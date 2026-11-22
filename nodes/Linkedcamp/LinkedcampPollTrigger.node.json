@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-linkedcamp.linkedcampPollTrigger",
+	"node": "@linkedcampai/n8n-nodes-linkedcamp.linkedcampPollTrigger",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": ["Sales", "Marketing & Content", "Communication"],

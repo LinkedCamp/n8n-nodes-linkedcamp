@@ -2,7 +2,7 @@
   <a href="https://www.linkedcamp.com"><img src="assets/logo-wide-1200.png" alt="Linkedcamp" width="480"></a>
 </p>
 
-# n8n-nodes-linkedcamp
+# @linkedcampai/n8n-nodes-linkedcamp
 
 The official [n8n](https://n8n.io) nodes for [Linkedcamp](https://www.linkedcamp.com).
 
@@ -20,7 +20,7 @@ The package contains three nodes:
 
 **n8n Cloud and self-hosted n8n (v1.94.0 or later):** once the node is verified, open the nodes panel, search for **Linkedcamp** and install it.
 
-**Self-hosted n8n:** go to **Settings → Community Nodes → Install**, enter `n8n-nodes-linkedcamp` and confirm. See the [n8n community nodes guide](https://docs.n8n.io/integrations/community-nodes/installation-and-management/).
+**Self-hosted n8n:** go to **Settings → Community Nodes → Install**, enter `@linkedcampai/n8n-nodes-linkedcamp` and confirm. See the [n8n community nodes guide](https://docs.n8n.io/integrations/community-nodes/installation-and-management/).
 
 ## Credentials
 

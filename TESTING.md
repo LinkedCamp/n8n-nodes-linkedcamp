@@ -61,4 +61,4 @@ See `dev/captures/probe-*.json`:
   3. Deactivate the workflow and check that the automation shows as inactive.
 - [ ] Poll trigger: activate the workflow and confirm two runs don't emit duplicates.
 - [ ] Error path: a bad campaign id gives a readable error, and continue-on-fail works.
-- [ ] `npx @n8n/scan-community-package n8n-nodes-linkedcamp` (after the first npm release).
+- [ ] `npx @n8n/scan-community-package @linkedcampai/n8n-nodes-linkedcamp` (after the first npm release).

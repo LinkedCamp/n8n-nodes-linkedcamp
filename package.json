@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-linkedcamp",
+  "name": "@linkedcampai/n8n-nodes-linkedcamp",
   "version": "0.1.0",
   "description": "n8n nodes for Linkedcamp: run LinkedIn and email outreach campaigns, add leads, handle inbox replies and react to events.",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "mcp"
   ],
   "author": {
-    "name": "linkedcampai",
+    "name": "Linkedcamp",
     "email": "support@linkedcamp.com",
     "url": "https://www.linkedcamp.com"
   },

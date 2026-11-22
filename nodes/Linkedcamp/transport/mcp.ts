@@ -16,7 +16,7 @@ export const MCP_URL = 'https://mcp.linkedcamp.com/mcp';
 export const CREDENTIAL_NAME = 'linkedcampApi';
 
 /** Kept in step with package.json by `npm run release`; only reported to the server. */
-export const CLIENT_INFO = { name: 'n8n-nodes-linkedcamp', version: '0.1.0' };
+export const CLIENT_INFO = { name: '@linkedcampai/n8n-nodes-linkedcamp', version: '0.1.0' };
 
 export type LinkedcampContext = IExecuteFunctions | ILoadOptionsFunctions | IPollFunctions | IHookFunctions;
 
