@@ -1,6 +1,6 @@
 {
   "name": "@linkedcampai/n8n-nodes-linkedcamp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "n8n nodes for Linkedcamp: run LinkedIn and email outreach campaigns, add leads, handle inbox replies and react to events.",
   "license": "MIT",
   "homepage": "https://www.linkedcamp.com/integrations/n8n",
